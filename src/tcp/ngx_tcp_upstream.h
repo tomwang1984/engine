@@ -67,7 +67,7 @@ typedef struct ngx_tcp_upstream_srv_conf_s  ngx_tcp_upstream_srv_conf_t;
 
 typedef ngx_int_t (*ngx_tcp_upstream_init_pt)(ngx_conf_t *cf,
     ngx_tcp_upstream_srv_conf_t *us);
-typedef ngx_int_t (*ngx_tcp_upstream_init_peer_pt)(ngx_tcp_request_t *r,
+typedef ngx_int_t (*ngx_tcp_upstream_init_peer_pt)(ngx_tcp_session_t *r,
     ngx_tcp_upstream_srv_conf_t *us);
 
 
@@ -248,7 +248,7 @@ typedef struct {
 } ngx_tcp_upstream_resolved_t;
 
 
-typedef void (*ngx_tcp_upstream_handler_pt)(ngx_tcp_request_t *r,
+typedef void (*ngx_tcp_upstream_handler_pt)(ngx_tcp_session_t *r,
     ngx_tcp_upstream_t *u);
 
 
@@ -283,17 +283,17 @@ struct ngx_tcp_upstream_s {
     void                            *input_filter_ctx;
 
 #if (NGX_TCP_CACHE)
-    ngx_int_t                      (*create_key)(ngx_tcp_request_t *r);
+    ngx_int_t                      (*create_key)(ngx_tcp_session_t *r);
 #endif
-    ngx_int_t                      (*create_request)(ngx_tcp_request_t *r);
-    ngx_int_t                      (*reinit_request)(ngx_tcp_request_t *r);
-    ngx_int_t                      (*process_header)(ngx_tcp_request_t *r);
-    void                           (*abort_request)(ngx_tcp_request_t *r);
-    void                           (*finalize_request)(ngx_tcp_request_t *r,
+    ngx_int_t                      (*create_request)(ngx_tcp_session_t *r);
+    ngx_int_t                      (*reinit_request)(ngx_tcp_session_t *r);
+    ngx_int_t                      (*process_header)(ngx_tcp_session_t *r);
+    void                           (*abort_request)(ngx_tcp_session_t *r);
+    void                           (*finalize_request)(ngx_tcp_session_t *r,
                                          ngx_int_t rc);
-    ngx_int_t                      (*rewrite_redirect)(ngx_tcp_request_t *r,
+    ngx_int_t                      (*rewrite_redirect)(ngx_tcp_session_t *r,
                                          ngx_table_elt_t *h, size_t prefix);
-    ngx_int_t                      (*rewrite_cookie)(ngx_tcp_request_t *r,
+    ngx_int_t                      (*rewrite_cookie)(ngx_tcp_session_t *r,
                                          ngx_table_elt_t *h);
 
     ngx_msec_t                       timeout;
@@ -335,11 +335,8 @@ typedef struct {
 } ngx_tcp_upstream_param_t;
 
 
-ngx_int_t ngx_tcp_upstream_header_variable(ngx_tcp_request_t *r,
-    ngx_tcp_variable_value_t *v, uintptr_t data);
-
-ngx_int_t ngx_tcp_upstream_create(ngx_tcp_request_t *r);
-void ngx_tcp_upstream_init(ngx_tcp_request_t *r);
+ngx_int_t ngx_tcp_upstream_create(ngx_tcp_session_t *r);
+void ngx_tcp_upstream_init(ngx_tcp_session_t *r);
 ngx_tcp_upstream_srv_conf_t *ngx_tcp_upstream_add(ngx_conf_t *cf,
     ngx_url_t *u, ngx_uint_t flags);
 char *ngx_tcp_upstream_bind_set_slot(ngx_conf_t *cf, ngx_command_t *cmd,

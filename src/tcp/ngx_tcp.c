@@ -6,8 +6,6 @@
 static char *ngx_tcp_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static ngx_int_t ngx_tcp_init_phases(ngx_conf_t *cf,
     ngx_tcp_core_main_conf_t *cmcf);
-static ngx_int_t ngx_tcp_init_headers_in_hash(ngx_conf_t *cf,
-    ngx_tcp_core_main_conf_t *cmcf);
 static ngx_int_t ngx_tcp_init_phase_handlers(ngx_conf_t *cf,
     ngx_tcp_core_main_conf_t *cmcf);
 
@@ -61,6 +59,7 @@ static ngx_int_t ngx_tcp_add_addrs6(ngx_conf_t *cf, ngx_tcp_port_t *hport,
 
 ngx_uint_t   ngx_tcp_max_module;
 
+ngx_int_t  (*ngx_tcp_top_body_filter) (ngx_tcp_session_t *r, ngx_chain_t *ch);
 
 static ngx_command_t  ngx_tcp_commands[] = {
 
@@ -381,14 +380,13 @@ ngx_tcp_init_phase_handlers(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf)
 {
     ngx_int_t                   j;
     ngx_uint_t                  i, n;
-    ngx_uint_t                  find_config_index, use_rewrite, use_access;
+    ngx_uint_t                 use_rewrite, use_access;
     ngx_tcp_handler_pt        *h;
     ngx_tcp_phase_handler_t   *ph;
     ngx_tcp_phase_handler_pt   checker;
 
     cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1;
     cmcf->phase_engine.location_rewrite_index = (ngx_uint_t) -1;
-    find_config_index = 0;
     use_rewrite = cmcf->phases[NGX_TCP_REWRITE_PHASE].handlers.nelts ? 1 : 0;
     use_access = cmcf->phases[NGX_TCP_ACCESS_PHASE].handlers.nelts ? 1 : 0;
 
@@ -420,14 +418,6 @@ ngx_tcp_init_phase_handlers(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf)
 
             break;
 
-        case NGX_TCP_FIND_CONFIG_PHASE:
-            find_config_index = n;
-
-            ph->checker = ngx_tcp_core_find_config_phase;
-            n++;
-            ph++;
-
-            continue;
 
         case NGX_TCP_REWRITE_PHASE:
             if (cmcf->phase_engine.location_rewrite_index == (ngx_uint_t) -1) {
@@ -437,29 +427,10 @@ ngx_tcp_init_phase_handlers(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf)
 
             break;
 
-        case NGX_TCP_POST_REWRITE_PHASE:
-            if (use_rewrite) {
-                ph->checker = ngx_tcp_core_post_rewrite_phase;
-                ph->next = find_config_index;
-                n++;
-                ph++;
-            }
-
-            continue;
-
         case NGX_TCP_ACCESS_PHASE:
             checker = ngx_tcp_core_access_phase;
             n++;
             break;
-
-        case NGX_TCP_POST_ACCESS_PHASE:
-            if (use_access) {
-                ph->checker = ngx_tcp_core_post_access_phase;
-                ph->next = n;
-                ph++;
-            }
-
-            continue;
 
         case NGX_TCP_TRY_FILES_PHASE:
             if (cmcf->try_files) {
@@ -640,19 +611,6 @@ ngx_tcp_init_locations(ngx_conf_t *cf, ngx_tcp_core_srv_conf_t *cscf,
             return NGX_ERROR;
         }
 
-#if (NGX_PCRE)
-
-        if (clcf->regex) {
-            r++;
-
-            if (regex == NULL) {
-                regex = q;
-            }
-
-            continue;
-        }
-
-#endif
 
         if (clcf->named) {
             n++;
@@ -796,9 +754,6 @@ ngx_tcp_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
     }
 
     if (clcf->exact_match
-#if (NGX_PCRE)
-        || clcf->regex
-#endif
         || clcf->named || clcf->noname)
     {
         lq->exact = clcf;
@@ -863,24 +818,6 @@ ngx_tcp_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
         return ngx_strcmp(first->name.data, second->name.data);
     }
 
-#if (NGX_PCRE)
-
-    if (first->regex && !second->regex) {
-        /* shift the regex matches to the end */
-        return 1;
-    }
-
-    if (!first->regex && second->regex) {
-        /* shift the regex matches to the end */
-        return -1;
-    }
-
-    if (first->regex || second->regex) {
-        /* do not sort the regex matches */
-        return 0;
-    }
-
-#endif
 
     rc = ngx_strcmp(first->name.data, second->name.data);
 
@@ -1387,11 +1324,6 @@ ngx_tcp_server_names(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf,
     ngx_hash_keys_arrays_t      ha;
     ngx_tcp_server_name_t     *name;
     ngx_tcp_core_srv_conf_t  **cscfp;
-#if (NGX_PCRE)
-    ngx_uint_t                  regex, i;
-
-    regex = 0;
-#endif
 
     ngx_memzero(&ha, sizeof(ngx_hash_keys_arrays_t));
 
@@ -1413,13 +1345,6 @@ ngx_tcp_server_names(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf,
         name = cscfp[s]->server_names.elts;
 
         for (n = 0; n < cscfp[s]->server_names.nelts; n++) {
-
-#if (NGX_PCRE)
-            if (name[n].regex) {
-                regex++;
-                continue;
-            }
-#endif
 
             rc = ngx_hash_add_key(&ha, &name[n].name, name[n].server,
                                   NGX_HASH_WILDCARD_KEY);
@@ -1495,33 +1420,6 @@ ngx_tcp_server_names(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf,
     }
 
     ngx_destroy_pool(ha.temp_pool);
-
-#if (NGX_PCRE)
-
-    if (regex == 0) {
-        return NGX_OK;
-    }
-
-    addr->nregex = regex;
-    addr->regex = ngx_palloc(cf->pool, regex * sizeof(ngx_tcp_server_name_t));
-    if (addr->regex == NULL) {
-        return NGX_ERROR;
-    }
-
-    i = 0;
-
-    for (s = 0; s < addr->servers.nelts; s++) {
-
-        name = cscfp[s]->server_names.elts;
-
-        for (n = 0; n < cscfp[s]->server_names.nelts; n++) {
-            if (name[n].regex) {
-                addr->regex[i++] = name[n];
-            }
-        }
-    }
-
-#endif
 
     return NGX_OK;
 

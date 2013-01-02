@@ -1,4 +1,3 @@
-
 #ifndef _NGX_TCP_CORE_H_INCLUDED_
 #define _NGX_TCP_CORE_H_INCLUDED_
 
@@ -102,7 +101,7 @@ typedef enum {
 
 typedef struct ngx_tcp_phase_handler_s  ngx_tcp_phase_handler_t;
 
-typedef ngx_int_t (*ngx_tcp_phase_handler_pt)(ngx_tcp_request_t *r,
+typedef ngx_int_t (*ngx_tcp_phase_handler_pt)(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
 
 struct ngx_tcp_phase_handler_s {
@@ -162,7 +161,7 @@ typedef struct {
     ngx_str_t                   server_name;
 
     size_t                      connection_pool_size;
-    size_t                      request_pool_size;
+    size_t                      session_pool_size;
     size_t                      client_header_buffer_size;
 
     ngx_bufs_t                  large_client_header_buffers;
@@ -246,9 +245,6 @@ typedef struct {
 
 
 struct ngx_tcp_server_name_s {
-#if (NGX_PCRE)
-    ngx_tcp_regex_t          *regex;
-#endif
     ngx_tcp_core_srv_conf_t  *server;   /* virtual name server conf */
     ngx_str_t                  name;
 };
@@ -257,7 +253,6 @@ struct ngx_tcp_server_name_s {
 typedef struct {
     ngx_int_t                  status;
     ngx_int_t                  overwrite;
-    ngx_tcp_complex_value_t   value;
     ngx_str_t                  args;
 } ngx_tcp_err_page_t;
 
@@ -275,9 +270,6 @@ typedef struct {
 struct ngx_tcp_core_loc_conf_s {
     ngx_str_t     name;          /* location name */
 
-#if (NGX_PCRE)
-    ngx_tcp_regex_t  *regex;
-#endif
 
     unsigned      noname:1;   /* "if () {}" block or limit_except */
     unsigned      lmt_excpt:1;
@@ -336,7 +328,7 @@ struct ngx_tcp_core_loc_conf_s {
 
     time_t        keepalive_header;        /* keepalive_timeout */
 
-    ngx_uint_t    keepalive_requests;      /* keepalive_requests */
+    ngx_uint_t    keepalive_sessions;      /* keepalive_sessions */
     ngx_uint_t    keepalive_disable;       /* keepalive_disable */
     ngx_uint_t    satisfy;                 /* satisfy */
     ngx_uint_t    lingering_close;         /* lingering_close */
@@ -359,16 +351,11 @@ struct ngx_tcp_core_loc_conf_s {
     ngx_flag_t    msie_padding;            /* msie_padding */
     ngx_flag_t    msie_refresh;            /* msie_refresh */
     ngx_flag_t    log_not_found;           /* log_not_found */
-    ngx_flag_t    log_subrequest;          /* log_subrequest */
+    ngx_flag_t    log_subsession;          /* log_subsession */
     ngx_flag_t    recursive_error_pages;   /* recursive_error_pages */
     ngx_flag_t    server_tokens;           /* server_tokens */
     ngx_flag_t    chunked_transfer_encoding; /* chunked_transfer_encoding */
 
-
-#if (NGX_HAVE_OPENAT)
-    ngx_uint_t    disable_symlinks;        /* disable_symlinks */
-    ngx_tcp_complex_value_t  *disable_symlinks_from;
-#endif
 
     ngx_array_t  *error_pages;             /* error_page */
     ngx_tcp_try_file_t    *try_files;     /* try_files */
@@ -419,59 +406,53 @@ struct ngx_tcp_location_tree_node_s {
 };
 
 
-void ngx_tcp_core_run_phases(ngx_tcp_request_t *r);
-ngx_int_t ngx_tcp_core_generic_phase(ngx_tcp_request_t *r,
+void ngx_tcp_core_run_phases(ngx_tcp_session_t *r);
+ngx_int_t ngx_tcp_core_generic_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
-ngx_int_t ngx_tcp_core_rewrite_phase(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_core_rewrite_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
-ngx_int_t ngx_tcp_core_find_config_phase(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_core_find_config_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
-ngx_int_t ngx_tcp_core_post_rewrite_phase(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_core_post_rewrite_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
-ngx_int_t ngx_tcp_core_access_phase(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_core_access_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
-ngx_int_t ngx_tcp_core_post_access_phase(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_core_post_access_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
-ngx_int_t ngx_tcp_core_try_files_phase(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_core_try_files_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
-ngx_int_t ngx_tcp_core_content_phase(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_core_content_phase(ngx_tcp_session_t *r,
     ngx_tcp_phase_handler_t *ph);
 
 
-void *ngx_tcp_test_content_type(ngx_tcp_request_t *r, ngx_hash_t *types_hash);
-ngx_int_t ngx_tcp_set_content_type(ngx_tcp_request_t *r);
-void ngx_tcp_set_exten(ngx_tcp_request_t *r);
-ngx_int_t ngx_tcp_send_response(ngx_tcp_request_t *r, ngx_uint_t status,
-    ngx_str_t *ct, ngx_tcp_complex_value_t *cv);
-u_char *ngx_tcp_map_uri_to_path(ngx_tcp_request_t *r, ngx_str_t *name,
+void *ngx_tcp_test_content_type(ngx_tcp_session_t *r, ngx_hash_t *types_hash);
+ngx_int_t ngx_tcp_set_content_type(ngx_tcp_session_t *r);
+u_char *ngx_tcp_map_uri_to_path(ngx_tcp_session_t *r, ngx_str_t *name,
     size_t *root_length, size_t reserved);
-ngx_int_t ngx_tcp_auth_basic_user(ngx_tcp_request_t *r);
+ngx_int_t ngx_tcp_auth_basic_user(ngx_tcp_session_t *r);
 
 
-ngx_int_t ngx_tcp_subrequest(ngx_tcp_request_t *r,
-    ngx_str_t *uri, ngx_str_t *args, ngx_tcp_request_t **sr,
-    ngx_tcp_post_subrequest_t *psr, ngx_uint_t flags);
-ngx_int_t ngx_tcp_internal_redirect(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_internal_redirect(ngx_tcp_session_t *r,
     ngx_str_t *uri, ngx_str_t *args);
-ngx_int_t ngx_tcp_named_location(ngx_tcp_request_t *r, ngx_str_t *name);
+ngx_int_t ngx_tcp_named_location(ngx_tcp_session_t *r, ngx_str_t *name);
 
 
-ngx_tcp_cleanup_t *ngx_tcp_cleanup_add(ngx_tcp_request_t *r, size_t size);
+ngx_tcp_cleanup_t *ngx_tcp_cleanup_add(ngx_tcp_session_t *r, size_t size);
 
 
-typedef ngx_int_t (*ngx_tcp_output_header_filter_pt)(ngx_tcp_request_t *r);
+typedef ngx_int_t (*ngx_tcp_output_header_filter_pt)(ngx_tcp_session_t *r);
 typedef ngx_int_t (*ngx_tcp_output_body_filter_pt)
-    (ngx_tcp_request_t *r, ngx_chain_t *chain);
+    (ngx_tcp_session_t *r, ngx_chain_t *chain);
 
 
-ngx_int_t ngx_tcp_output_filter(ngx_tcp_request_t *r, ngx_chain_t *chain);
-ngx_int_t ngx_tcp_write_filter(ngx_tcp_request_t *r, ngx_chain_t *chain);
+ngx_int_t ngx_tcp_output_filter(ngx_tcp_session_t *r, ngx_chain_t *chain);
+ngx_int_t ngx_tcp_write_filter(ngx_tcp_session_t *r, ngx_chain_t *chain);
 
 
-ngx_int_t ngx_tcp_set_disable_symlinks(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_set_disable_symlinks(ngx_tcp_session_t *r,
     ngx_tcp_core_loc_conf_t *clcf, ngx_str_t *path, ngx_open_file_info_t *of);
 
-ngx_int_t ngx_tcp_get_forwarded_addr(ngx_tcp_request_t *r, ngx_addr_t *addr,
+ngx_int_t ngx_tcp_get_forwarded_addr(ngx_tcp_session_t *r, ngx_addr_t *addr,
     u_char *xff, size_t xfflen, ngx_array_t *proxies, int recursive);
 
 

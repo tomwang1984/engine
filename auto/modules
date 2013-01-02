@@ -60,6 +60,11 @@ if [ $NGX_TEST_BUILD_SOLARIS_SENDFILEV = YES ]; then
     CORE_SRCS="$CORE_SRCS $SOLARIS_SENDFILEV_SRCS"
 fi
 
+#
+if [ $TCP != YES ]; then
+    HTTP_SRCS="$TCP_SRCS"
+fi
+#
 
 if [ $HTTP != YES ]; then
     have=NGX_CRYPT . auto/nohave
@@ -423,6 +428,9 @@ if [ $HTTP = YES ]; then
     NGX_ADDON_DEPS="$NGX_ADDON_DEPS \$(HTTP_DEPS)"
 fi
 
+if [ $TCP = YES ]; then
+    modules="$modules $TCP_MODULES"
+fi 
 
 if [ $MAIL = YES ]; then
     modules="$modules $MAIL_MODULES"

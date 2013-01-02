@@ -72,7 +72,7 @@ static ngx_tcp_output_body_filter_pt    ngx_tcp_next_body_filter;
 
 
 static ngx_int_t
-ngx_tcp_copy_filter(ngx_tcp_request_t *r, ngx_chain_t *in)
+ngx_tcp_copy_filter(ngx_tcp_session_t *r, ngx_chain_t *in)
 {
     ngx_int_t                     rc;
     ngx_connection_t             *c;
@@ -99,10 +99,10 @@ ngx_tcp_copy_filter(ngx_tcp_request_t *r, ngx_chain_t *in)
         clcf = ngx_tcp_get_module_loc_conf(r, ngx_tcp_core_module);
 
         ctx->sendfile = c->sendfile;
-        ctx->need_in_memory = r->main_filter_need_in_memory
+      /*  ctx->need_in_memory = r->main_filter_need_in_memory
                               || r->filter_need_in_memory;
         ctx->need_in_temp = r->filter_need_temporary;
-
+      */
         ctx->alignment = clcf->directio_alignment;
 
         ctx->pool = r->pool;
@@ -125,7 +125,7 @@ ngx_tcp_copy_filter(ngx_tcp_request_t *r, ngx_chain_t *in)
 #endif
 
         if (in && in->buf && ngx_buf_size(in->buf)) {
-            r->request_output = 1;
+        //    r->request_output = 1;
         }
     }
 
@@ -137,10 +137,10 @@ ngx_tcp_copy_filter(ngx_tcp_request_t *r, ngx_chain_t *in)
         rc = ngx_output_chain(ctx, in);
 
         if (ctx->in == NULL) {
-            r->buffered &= ~NGX_TCP_COPY_BUFFERED;
+           // r->buffered &= ~NGX_TCP_COPY_BUFFERED;
 
         } else {
-            r->buffered |= NGX_TCP_COPY_BUFFERED;
+          //  r->buffered |= NGX_TCP_COPY_BUFFERED;
         }
 
         ngx_log_debug3(NGX_LOG_DEBUG_TCP, c->log, 0,
@@ -205,7 +205,7 @@ ngx_tcp_copy_filter(ngx_tcp_request_t *r, ngx_chain_t *in)
 static void
 ngx_tcp_copy_aio_handler(ngx_output_chain_ctx_t *ctx, ngx_file_t *file)
 {
-    ngx_tcp_request_t *r;
+    ngx_tcp_session_t *r;
 
     r = ctx->filter_ctx;
 
@@ -222,7 +222,7 @@ static void
 ngx_tcp_copy_aio_event_handler(ngx_event_t *ev)
 {
     ngx_event_aio_t     *aio;
-    ngx_tcp_request_t  *r;
+    ngx_tcp_session_t  *r;
 
     aio = ev->data;
     r = aio->data;
@@ -240,7 +240,7 @@ static void
 ngx_tcp_copy_aio_sendfile_event_handler(ngx_event_t *ev)
 {
     ngx_event_aio_t     *aio;
-    ngx_tcp_request_t  *r;
+    ngx_tcp_session_t  *r;
 
     aio = ev->data;
     r = aio->data;

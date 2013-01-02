@@ -64,9 +64,9 @@ typedef struct {
 
 ngx_int_t ngx_tcp_upstream_init_round_robin(ngx_conf_t *cf,
     ngx_tcp_upstream_srv_conf_t *us);
-ngx_int_t ngx_tcp_upstream_init_round_robin_peer(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_upstream_init_round_robin_peer(ngx_tcp_session_t *r,
     ngx_tcp_upstream_srv_conf_t *us);
-ngx_int_t ngx_tcp_upstream_create_round_robin_peer(ngx_tcp_request_t *r,
+ngx_int_t ngx_tcp_upstream_create_round_robin_peer(ngx_tcp_session_t *r,
     ngx_tcp_upstream_resolved_t *ur);
 ngx_int_t ngx_tcp_upstream_get_round_robin_peer(ngx_peer_connection_t *pc,
     void *data);

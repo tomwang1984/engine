@@ -529,3 +529,27 @@ NGX_GOOGLE_PERFTOOLS_MODULE=ngx_google_perftools_module
 NGX_GOOGLE_PERFTOOLS_SRCS=src/misc/ngx_google_perftools_module.c
 
 NGX_CPP_TEST_SRCS=src/misc/ngx_cpp_test_module.cpp
+
+#tcp modules 
+#add by tomwang
+TCP_MODULES="ngx_tcp_module \
+             ngx_tcp_core_module \
+             ngx_tcp_log_module \
+             ngx_tcp_upstream_module"
+
+TCP_INCS="src/tcp src/tcp/modules"
+
+TCP_DEPS="src/tcp/ngx_tcp.h \
+          src/tcp/ngx_tcp_config.h \
+	  src/tcp/ngx_tcp_core_module.h \
+	  src/tcp/ngx_tcp_session.h \
+	  src/tcp/ngx_tcp_upstream.h \
+	  src/tcp/ngx_tcp_upstream_round_robin.h"
+
+TCP_SRCS="src/tcp/ngx_tcp.c \
+	  src/tcp/ngx_tcp_copy_filter_module.c \
+	  src/tcp/ngx_tcp_core_module.c \
+	  src/tcp/ngx_tcp_parse_time.c \
+	  src/tcp/ngx_tcp_session.c \
+	  src/tcp/ngx_tcp_upstream.c \
+	  src/tcp/ngx_tcp_upstream_round_robin.c"
