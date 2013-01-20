@@ -7,6 +7,23 @@
 #include <ngx_core.h>
 #include <ngx_tcp.h>
 
+typedef struct ngx_tcp_protocol_s  ngx_tcp_protocol_t;
+
+typedef void (*ngx_tcp_init_session_pt)(ngx_tcp_session_t *s);
+typedef void (*ngx_tcp_init_protocol_pt)(ngx_event_t *rev);
+typedef void (*ngx_tcp_parse_protocol_pt)(ngx_event_t *rev);
+
+struct ngx_tcp_protocol_s {
+   ngx_str_t                   name;
+   in_port_t                   port[4];
+   ngx_uint_t                  type;
+
+   ngx_tcp_init_session_pt     init_session;
+   ngx_tcp_init_protocol_pt    init_protocol;
+   ngx_tcp_parse_protocol_pt   parse_protocol;
+
+   ngx_str_t                   internal_server_error;
+};
 
 typedef struct {
     void        **main_conf;
@@ -16,6 +33,8 @@ typedef struct {
 
 
 typedef struct {
+    ngx_tcp_protocol_t         *protocol;
+
     ngx_int_t   (*preconfiguration)(ngx_conf_t *cf);
     ngx_int_t   (*postconfiguration)(ngx_conf_t *cf);
 

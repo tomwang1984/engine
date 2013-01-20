@@ -407,9 +407,8 @@ ngx_tcp_init_phase_handlers(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf)
 
     for (i = 0; i < NGX_TCP_LOG_PHASE; i++) {
         h = cmcf->phases[i].handlers.elts;
-
+/*
         switch (i) {
-
         case NGX_TCP_SERVER_REWRITE_PHASE:
             if (cmcf->phase_engine.server_rewrite_index == (ngx_uint_t) -1) {
                 cmcf->phase_engine.server_rewrite_index = n;
@@ -426,7 +425,6 @@ ngx_tcp_init_phase_handlers(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf)
             checker = ngx_tcp_core_rewrite_phase;
 
             break;
-
         case NGX_TCP_ACCESS_PHASE:
             checker = ngx_tcp_core_access_phase;
             n++;
@@ -440,15 +438,13 @@ ngx_tcp_init_phase_handlers(ngx_conf_t *cf, ngx_tcp_core_main_conf_t *cmcf)
             }
 
             continue;
-
         case NGX_TCP_CONTENT_PHASE:
             checker = ngx_tcp_core_content_phase;
-            break;
-
         default:
-            checker = ngx_tcp_core_generic_phase;
+           checker = ngx_tcp_core_generic_phase;
         }
-
+*/
+	checker = NULL;
         n += cmcf->phases[i].handlers.nelts;
 
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {

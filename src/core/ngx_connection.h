@@ -148,6 +148,8 @@ struct ngx_connection_s {
 
     ngx_uint_t          requests;
 
+    ngx_uint_t          sessions;
+
     unsigned            buffered:8;
 
     unsigned            log_error:3;     /* ngx_connection_log_error_e */

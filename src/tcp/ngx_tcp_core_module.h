@@ -30,10 +30,8 @@
 #define NGX_TCP_KEEPALIVE_DISABLE_MSIE6   0x0004
 #define NGX_TCP_KEEPALIVE_DISABLE_SAFARI  0x0008
 
-
 typedef struct ngx_tcp_location_tree_node_s  ngx_tcp_location_tree_node_t;
 typedef struct ngx_tcp_core_loc_conf_s  ngx_tcp_core_loc_conf_t;
-
 
 typedef struct {
     union {
@@ -122,7 +120,6 @@ typedef struct {
     ngx_array_t                handlers;
 } ngx_tcp_phase_t;
 
-
 typedef struct {
     ngx_array_t                servers;         /* ngx_tcp_core_srv_conf_t */
 
@@ -143,12 +140,23 @@ typedef struct {
 
     ngx_hash_keys_arrays_t    *variables_keys;
 
+    ngx_array_t               listen;
     ngx_array_t               *ports;
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
     ngx_tcp_phase_t           phases[NGX_TCP_LOG_PHASE + 1];
 } ngx_tcp_core_main_conf_t;
+
+typedef struct {
+    ngx_array_t             *logs;       /* array of ngx_tcp_log_t */
+
+    ngx_open_file_cache_t   *open_file_cache;
+    time_t                   open_file_cache_valid;
+    ngx_uint_t               open_file_cache_min_uses;
+
+    ngx_uint_t               off;        /* unsigned  off:1 */
+} ngx_tcp_log_srv_conf_t;
 
 
 typedef struct {
@@ -159,6 +167,18 @@ typedef struct {
     ngx_tcp_conf_ctx_t        *ctx;
 
     ngx_str_t                   server_name;
+
+    ngx_array_t              locations;
+
+    ngx_tcp_protocol_t      *protocol;
+
+    ngx_msec_t               timeout;
+    ngx_msec_t               resolver_timeout;
+
+    ngx_flag_t               so_keepalive;
+    ngx_flag_t               tcp_nodelay;
+
+    ngx_tcp_log_srv_conf_t  *access_log;
 
     size_t                      connection_pool_size;
     size_t                      session_pool_size;
@@ -176,6 +196,7 @@ typedef struct {
 #if (NGX_PCRE)
     unsigned                    captures:1;
 #endif
+
 
     ngx_tcp_core_loc_conf_t  **named_locations;
 } ngx_tcp_core_srv_conf_t;
@@ -200,6 +221,19 @@ typedef struct {
     in_addr_t                  addr;
     ngx_tcp_addr_conf_t       conf;
 } ngx_tcp_in_addr_t;
+
+typedef struct {
+    u_char                  sockaddr[NGX_SOCKADDRLEN];
+    socklen_t               socklen;
+
+    /* server ctx */
+    ngx_tcp_conf_ctx_t     *ctx;
+
+    unsigned                default_port:1;
+    unsigned                bind:1;
+    unsigned                wildcard:1;
+    ngx_tcp_core_srv_conf_t *conf;
+} ngx_tcp_listen_t;
 
 
 #if (NGX_HAVE_INET6)

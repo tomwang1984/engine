@@ -38,6 +38,7 @@ static ngx_command_t  ngx_tcp_copy_filter_commands[] = {
 
 
 static ngx_tcp_module_t  ngx_tcp_copy_filter_module_ctx = {
+    NULL,                                 /* protocol */
     NULL,                                  /* preconfiguration */
     ngx_tcp_copy_filter_init,             /* postconfiguration */
 

@@ -138,8 +138,8 @@ typedef struct {
     ngx_uint_t                       next_upstream;
     ngx_uint_t                       store_access;
     ngx_flag_t                       buffering;
-    ngx_flag_t                       pass_request_headers;
-    ngx_flag_t                       pass_request_body;
+    ngx_flag_t                       pass_session_headers;
+    ngx_flag_t                       pass_session_body;
 
     ngx_flag_t                       ignore_client_abort;
     ngx_flag_t                       intercept_errors;
@@ -153,32 +153,12 @@ typedef struct {
 
     ngx_addr_t                      *local;
 
-#if (NGX_TCP_CACHE)
-    ngx_shm_zone_t                  *cache;
-
-    ngx_uint_t                       cache_min_uses;
-    ngx_uint_t                       cache_use_stale;
-    ngx_uint_t                       cache_methods;
-
-    ngx_flag_t                       cache_lock;
-    ngx_msec_t                       cache_lock_timeout;
-
-    ngx_array_t                     *cache_valid;
-    ngx_array_t                     *cache_bypass;
-    ngx_array_t                     *no_cache;
-#endif
-
     ngx_array_t                     *store_lengths;
     ngx_array_t                     *store_values;
 
     signed                           store:2;
     unsigned                         intercept_404:1;
     unsigned                         change_buffering:1;
-
-#if (NGX_TCP_SSL)
-    ngx_ssl_t                       *ssl;
-    ngx_flag_t                       ssl_session_reuse;
-#endif
 
     ngx_str_t                        module;
 } ngx_tcp_upstream_conf_t;
@@ -282,14 +262,11 @@ struct ngx_tcp_upstream_s {
     ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
     void                            *input_filter_ctx;
 
-#if (NGX_TCP_CACHE)
-    ngx_int_t                      (*create_key)(ngx_tcp_session_t *r);
-#endif
-    ngx_int_t                      (*create_request)(ngx_tcp_session_t *r);
-    ngx_int_t                      (*reinit_request)(ngx_tcp_session_t *r);
+    ngx_int_t                      (*create_session)(ngx_tcp_session_t *r);
+    ngx_int_t                      (*reinit_session)(ngx_tcp_session_t *r);
     ngx_int_t                      (*process_header)(ngx_tcp_session_t *r);
-    void                           (*abort_request)(ngx_tcp_session_t *r);
-    void                           (*finalize_request)(ngx_tcp_session_t *r,
+    void                           (*abort_session)(ngx_tcp_session_t *r);
+    void                           (*finalize_session)(ngx_tcp_session_t *r,
                                          ngx_int_t rc);
     ngx_int_t                      (*rewrite_redirect)(ngx_tcp_session_t *r,
                                          ngx_table_elt_t *h, size_t prefix);

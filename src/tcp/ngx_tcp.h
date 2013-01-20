@@ -52,10 +52,6 @@ ngx_int_t ngx_tcp_add_listen(ngx_conf_t *cf, ngx_tcp_core_srv_conf_t *cscf,
 
 void ngx_tcp_init_connection(ngx_connection_t *c);
 
-#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-int ngx_tcp_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg);
-#endif
-
 ngx_int_t ngx_tcp_parse_session_line(ngx_tcp_session_t *r, ngx_buf_t *b);
 ngx_int_t ngx_tcp_parse_complex_uri(ngx_tcp_session_t *r,
 	    ngx_uint_t merge_slashes);

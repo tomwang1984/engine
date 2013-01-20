@@ -223,7 +223,7 @@ ngx_tcp_upstream_cmp_servers(const void *one, const void *two)
 
 
 ngx_int_t
-ngx_tcp_upstream_init_round_robin_peer(ngx_tcp_request_t *r,
+ngx_tcp_upstream_init_round_robin_peer(ngx_tcp_session_t *r,
     ngx_tcp_upstream_srv_conf_t *us)
 {
     ngx_uint_t                         n;
@@ -277,7 +277,7 @@ ngx_tcp_upstream_init_round_robin_peer(ngx_tcp_request_t *r,
 
 
 ngx_int_t
-ngx_tcp_upstream_create_round_robin_peer(ngx_tcp_request_t *r,
+ngx_tcp_upstream_create_round_robin_peer(ngx_tcp_session_t *r,
     ngx_tcp_upstream_resolved_t *ur)
 {
     u_char                            *p;
