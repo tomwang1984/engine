@@ -6,8 +6,6 @@
 
 static void *ngx_tcp_core_create_main_conf(ngx_conf_t *cf);
 static void *ngx_tcp_core_create_srv_conf(ngx_conf_t *cf);
-static char *ngx_tcp_core_merge_srv_conf(ngx_conf_t *cf, void *parent,
-    void *child);
 static char *ngx_tcp_core_server(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_tcp_core_listen(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -147,7 +145,7 @@ static ngx_tcp_module_t  ngx_tcp_core_module_ctx = {
     NULL,                                  /* init main configuration */
 
     ngx_tcp_core_create_srv_conf,          /* create server configuration */
-    ngx_tcp_core_merge_srv_conf,            /* merge server configuration */
+    NULL,            /* merge server configuration */
     NULL,                                  /*create loc server*/
     NULL                                   /*merge loc server*/
 };
@@ -536,69 +534,6 @@ ngx_tcp_core_create_srv_conf(ngx_conf_t *cf)
     lscf->open_file_cache = NGX_CONF_UNSET_PTR;
 
     return cscf;
-}
-
-
-static char *
-ngx_tcp_core_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
-{
-    ngx_tcp_core_srv_conf_t *prev = parent;
-    ngx_tcp_core_srv_conf_t *conf = child;
-
-    ngx_str_t                name;
-    ngx_tcp_server_name_t  *sn;
-
-    /* TODO: it does not merge, it inits only */
-
-    ngx_conf_merge_size_value(conf->connection_pool_size,
-                              prev->connection_pool_size, 256);
-    ngx_conf_merge_size_value(conf->session_pool_size,
-                              prev->session_pool_size, 4096);
-    ngx_conf_merge_msec_value(conf->client_header_timeout,
-                              prev->client_header_timeout, 60000);
-    ngx_conf_merge_size_value(conf->client_header_buffer_size,
-                              prev->client_header_buffer_size, 1024);
-    ngx_conf_merge_bufs_value(conf->large_client_header_buffers,
-                              prev->large_client_header_buffers,
-                              4, 8192);
-
-    if (conf->large_client_header_buffers.size < conf->connection_pool_size) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "the \"large_client_header_buffers\" size must be "
-                           "equal to or greater than \"connection_pool_size\"");
-        return NGX_CONF_ERROR;
-    }
-
-    ngx_conf_merge_value(conf->ignore_invalid_headers,
-                              prev->ignore_invalid_headers, 1);
-
-    ngx_conf_merge_value(conf->merge_slashes, prev->merge_slashes, 1);
-
-    ngx_conf_merge_value(conf->underscores_in_headers,
-                              prev->underscores_in_headers, 0);
-
-    if (conf->server_names.nelts == 0) {
-        /* the array has 4 empty preallocated elements, so push cannot fail */
-        sn = ngx_array_push(&conf->server_names);
-        sn->server = conf;
-        ngx_str_set(&sn->name, "");
-    }
-
-    sn = conf->server_names.elts;
-    name = sn[0].name;
-
-    if (name.data[0] == '.') {
-        name.len--;
-        name.data++;
-    }
-
-    conf->server_name.len = name.len;
-    conf->server_name.data = ngx_pstrdup(cf->pool, &name);
-    if (conf->server_name.data == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    return NGX_CONF_OK;
 }
 
 static char *

@@ -49,7 +49,7 @@ typedef struct {
 } ngx_tcp_module_t;
 
 
-#define NGX_TCP_MODULE           0x50545448   /* "TCP" */
+#define NGX_TCP_MODULE           0x50435400   /* "TCP" */
 
 #define NGX_TCP_MAIN_CONF        0x02000000
 #define NGX_TCP_SRV_CONF         0x04000000
